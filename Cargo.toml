@@ -1,0 +1,20 @@
+[package]
+name = "rust-wasm-double-pendulum"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = "0.2.106"
+
+[dependencies.web-sys]
+version = "0.3.83"
+features = [
+    "CanvasRenderingContext2d",
+    "Document",
+    "Element",
+    "HtmlCanvasElement",
+    "Window",
+]
