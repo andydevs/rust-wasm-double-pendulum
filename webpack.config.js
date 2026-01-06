@@ -1,6 +1,5 @@
 const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
-const WasmPackPlugin = require('@wasm-tool/wasm-pack-plugin')
 
 const publicDir = path.resolve(__dirname, 'public')
 
@@ -11,23 +10,29 @@ module.exports = {
         filename: 'bundle.js',
         clean: true
     },
+    watchOptions: {
+        aggregateTimeout: 200,
+        poll: 1000
+    },
     devServer: {
         static: { directory: publicDir },
-        hot: true,
-        open: true
+        hot: false,
+        liveReload: true
     },
     plugins: [
         new HtmlWebpackPlugin({
             title: 'Rust WASM Double Pendulum',
             inject: 'body'
-        }),
-        new WasmPackPlugin({
-            crateDirectory: __dirname
         })
     ],
     mode: 'development',
     module: {
-        rules: []
+        rules: [
+            {
+                test: /\.css$/i,
+                use: ['style-loader', 'css-loader']
+            }
+        ]
     },
     experiments: {
         asyncWebAssembly: true

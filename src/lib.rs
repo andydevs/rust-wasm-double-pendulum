@@ -1,4 +1,5 @@
 use wasm_bindgen::prelude::*;
+use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 
 #[allow(unused_macros)]
 macro_rules! console_log {
@@ -10,37 +11,38 @@ macro_rules! console_log {
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
     console_error_panic_hook::set_once();
+    console_log!("main() function in lib.rs called");
 
     // Get document
     let document = web_sys::window()
-        .ok_or(JsValue::from_str("Could not find window object!"))?
+        .ok_or(JsValue::from("Could not find window!"))?
         .document()
-        .ok_or(JsValue::from_str("Could not find webpage document!"))?;
+        .ok_or(JsValue::from("Could not find document!"))?;
+    console_log!("Get document");
 
-    // Simple arithmetic demo
-    let a = 8;
-    let b = 10;
-    let c = a + b;
-
-    // Create root element
-    let root = document.create_element("div")?;
-    root.set_attribute("style", "font-family:Arial,sans-serif;padding:24px;")?;
-
-    // Create html substring
-    let mut subhtml = String::new();
-    subhtml.push_str("<h1>Rust WASM Double Pendulum</h1>\n");
-    subhtml
-        .push_str("<p>Webpack + HtmlWebpackPlugin demo. Replace this with your app entry.</p>\n");
-    subhtml.push_str(&format!("<p>{} + {} = {}</p>", a, b, c));
-
-    // Set substring in root
-    root.set_inner_html(&subhtml);
-
-    // Add root to document body
+    // Create and attach canvas element
+    let canvas = document
+        .create_element("canvas")?
+        .dyn_into::<HtmlCanvasElement>()?;
+    canvas.set_attribute("width", "1200")?;
+    canvas.set_attribute("height", "900")?;
     document
         .body()
         .ok_or(JsValue::from("Could not find document body!"))?
-        .append_child(&root)?;
+        .append_child(&canvas)?;
+    console_log!("Create canvas");
+
+    // Get canvas rendering context
+    let ctx2d = canvas
+        .get_context("2d")?
+        .ok_or(JsValue::from("Could not create 2D drawing context!"))?
+        .dyn_into::<CanvasRenderingContext2d>()?;
+    console_log!("Get render context");
+
+    // Draw something
+    ctx2d.rect(20.0, 20.0, 100.0, 100.0);
+    ctx2d.fill();
+    console_log!("Draw a rectangle");
 
     Ok(())
 }

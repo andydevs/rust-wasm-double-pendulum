@@ -3,12 +3,20 @@
     "version": "1.0.0",
     "private": true,
     "scripts": {
-        "start": "webpack serve --open --mode development",
-        "build": "webpack --mode production"
+        "rust:build": "wasm-pack build --target bundler --out-name index --out-dir pkg",
+        "rust:watch": "cross-env CHOKIDAR_USEPOLLING=1 chokidar 'Cargo.toml' 'src/**/*.rs' -c 'npm run rust:build'",
+        "web:build": "webpack --mode production",
+        "web:serve": "webpack serve --mode development",
+        "start": "npm-run-all rust:build --parallel rust:watch web:serve",
+        "build": "npm-run-all rust:build web:build"
     },
     "devDependencies": {
-        "@wasm-tool/wasm-pack-plugin": "^1.7.0",
+        "chokidar-cli": "^3.0.0",
+        "cross-env": "^10.1.0",
+        "css-loader": "^7.1.2",
         "html-webpack-plugin": "^5.5.3",
+        "npm-run-all": "^4.1.5",
+        "style-loader": "^4.0.0",
         "webpack": "^5.88.2",
         "webpack-cli": "^5.1.4",
         "webpack-dev-server": "^4.15.1"
