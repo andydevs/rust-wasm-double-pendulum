@@ -1,3 +1,11 @@
-canvas {
-    border: 1px solid #aaa;
+body {
+    background-color: #333;
+}
+
+#root {
+    text-align: center;
+}
+
+#render-canvas {
+    border: 1px solid #555;
 }

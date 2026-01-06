@@ -22,7 +22,8 @@ module.exports = {
     plugins: [
         new HtmlWebpackPlugin({
             title: 'Rust WASM Double Pendulum',
-            inject: 'body'
+            inject: 'head',
+            template: 'index.html.ejs'
         })
     ],
     mode: 'development',
