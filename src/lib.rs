@@ -1,4 +1,7 @@
-use std::{cell::RefCell, rc::Rc};
+mod anim;
+mod sim;
+
+use crate::sim::{SimCtx, run_simulation_loop};
 use wasm_bindgen::prelude::*;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, window};
 
@@ -9,87 +12,18 @@ macro_rules! console_log {
     };
 }
 
-fn run_request_animation_frame_loop<F: FnMut() + 'static>(mut callback: F) -> Result<(), JsValue> {
-    // Two pointers to a frame function so that one
-    // can be called within the function while we're
-    // defining it on the other one...
-    let frame_fn0 = Rc::new(RefCell::new(None::<Closure<dyn FnMut()>>));
-    let frame_fn1 = frame_fn0.clone();
-
-    // Create callback in borrow
-    *frame_fn1.borrow_mut() = Some(Closure::new(move || {
-        // Call function.
-        // Function mutates values internally
-        callback();
-
-        // Request new animation frame
-        let _ = window().unwrap().request_animation_frame(
-            frame_fn0
-                .borrow()
-                .as_ref()
-                .unwrap()
-                .as_ref()
-                .unchecked_ref(),
-        );
-    }));
-
-    // Request initial animation frame
-    window().unwrap().request_animation_frame(
-        frame_fn1
-            .borrow()
-            .as_ref()
-            .unwrap()
-            .as_ref()
-            .unchecked_ref(),
-    )?;
-    Ok(())
-}
-
-struct AnimationContext<S> {
-    canvas_width: u32,
-    canvas_height: u32,
-    canvas_context: CanvasRenderingContext2d,
-    frame_number: u32,
-    anim_state: S,
-}
-
-fn run_simulation_loop<S: 'static, F: FnMut(&mut AnimationContext<S>) + 'static>(
-    canvas: HtmlCanvasElement,
-    ctx2d: CanvasRenderingContext2d,
-    initial_state: S,
-    mut render_update: F,
-) -> Result<(), JsValue> {
-    // Initialize animation context
-    let mut ctx = AnimationContext {
-        canvas_width: canvas.width(),
-        canvas_height: canvas.height(),
-        anim_state: initial_state,
-        canvas_context: ctx2d,
-        frame_number: 0,
-    };
-
-    // Begin animation loop
-    run_request_animation_frame_loop(move || {
-        // Call render update
-        render_update(&mut ctx);
-
-        // Update frame number
-        ctx.frame_number += 1;
-    })
-}
-
 struct AnimState {
     position: (f64, f64),
     velocity: (f64, f64),
 }
 
-fn loop_fn(ctx: &mut AnimationContext<AnimState>) {
-    let state = &mut ctx.anim_state;
+fn loop_fn(ctx: &mut SimCtx<AnimState>) {
+    let state = &mut ctx.sim_state;
 
     // Draw something
     {
-        let ctx2d = &ctx.canvas_context;
-        ctx2d.clear_rect(0.0, 0.0, ctx.canvas_width as f64, ctx.canvas_height as f64);
+        let ctx2d = &ctx.render.ctx2d;
+        ctx2d.clear_rect(0.0, 0.0, ctx.render.width as f64, ctx.render.height as f64);
         ctx2d.fill_rect(state.position.0, state.position.1, 100.0, 100.0);
     }
 
