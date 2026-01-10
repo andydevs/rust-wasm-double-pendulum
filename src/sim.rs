@@ -11,6 +11,7 @@ pub struct RenderCtx {
 pub struct FrameCtx {
     pub number: u32,
     pub delta_t: f64,
+    pub time: f64,
 }
 
 pub struct SimulationContext<S> {
@@ -38,20 +39,15 @@ pub fn run_simulation_loop<S: 'static, F: FnMut(&mut SimulationContext<S>) + 'st
         frame: FrameCtx {
             number: 0,
             delta_t: 0.0,
+            time: Date::now(),
         },
         sim_state: initial_state,
     };
-
-    let mut time_end = Date::now();
-    let mut time_start = Date::now();
     run_request_animation_frame_loop(move || {
-        time_end = Date::now();
-
+        let new_time = Date::now();
+        ctx.frame.delta_t = (new_time - ctx.frame.time) / MS_PER_SEC;
+        ctx.frame.time = new_time;
         render_update(&mut ctx);
-
         ctx.frame.number += 1;
-        ctx.frame.delta_t = (time_end - time_start) / MS_PER_SEC;
-
-        time_start = Date::now();
     })
 }

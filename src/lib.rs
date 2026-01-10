@@ -1,7 +1,11 @@
 mod anim;
+mod dynamics;
 mod sim;
 
-use crate::sim::{SimCtx, run_simulation_loop};
+use crate::{
+    dynamics::{DynamicObject, Vector2D},
+    sim::{SimCtx, run_simulation_loop},
+};
 use wasm_bindgen::prelude::*;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, window};
 
@@ -13,8 +17,22 @@ macro_rules! console_log {
 }
 
 struct AnimState {
-    position: (f64, f64),
-    velocity: (f64, f64),
+    position: Vector2D,
+    velocity: Vector2D,
+}
+
+impl DynamicObject for AnimState {
+    fn get_position(&self) -> Vector2D {
+        self.position
+    }
+
+    fn set_position(&mut self, position: Vector2D) {
+        self.position = position;
+    }
+
+    fn get_velocity(&self) -> Vector2D {
+        self.velocity
+    }
 }
 
 fn loop_fn(ctx: &mut SimCtx<AnimState>) {
@@ -28,10 +46,7 @@ fn loop_fn(ctx: &mut SimCtx<AnimState>) {
     }
 
     // Update state
-    state.position = (
-        state.position.0 + state.velocity.0,
-        state.position.1 + state.velocity.1,
-    );
+    state.update(ctx.frame.delta_t);
 }
 
 #[wasm_bindgen(start)]
@@ -60,7 +75,7 @@ pub fn main() -> Result<(), JsValue> {
     // Start an animation loop
     let initial_state = AnimState {
         position: (20.0, 20.0),
-        velocity: (1.0, 0.5),
+        velocity: (100.0, 50.0),
     };
     run_simulation_loop(canvas, ctx2d, initial_state, loop_fn)
 }
