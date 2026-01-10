@@ -1,7 +1,4 @@
-use std::{
-    cell::{Ref, RefCell},
-    rc::Rc,
-};
+use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::prelude::*;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, window};
 
@@ -13,23 +10,35 @@ macro_rules! console_log {
 }
 
 struct AnimationContext<S> {
+    canvas_width: u32,
+    canvas_height: u32,
     canvas_context: CanvasRenderingContext2d,
-    frame_number: i32,
+    frame_number: u32,
     anim_state: S,
 }
 
 fn animation_loop<S: 'static, F: FnMut(&mut AnimationContext<S>) + 'static>(
+    canvas: HtmlCanvasElement,
     canvas_context: CanvasRenderingContext2d,
     mut f: F,
     initial_state: S,
 ) -> Result<(), JsValue> {
+    // Two pointers to a frame function so that one
+    // can be called within the function while we're
+    // defining it on the other one...
     let frame_fn0 = Rc::new(RefCell::new(None::<Closure<dyn FnMut()>>));
     let frame_fn1 = frame_fn0.clone();
+
+    // Initialize animation context
     let mut ctx = AnimationContext {
+        canvas_width: canvas.width(),
+        canvas_height: canvas.height(),
         anim_state: initial_state,
         canvas_context: canvas_context,
         frame_number: 0,
     };
+
+    // Create callback in borrow
     *frame_fn1.borrow_mut() = Some(Closure::new(move || {
         f(&mut ctx);
         ctx.frame_number += 1;
@@ -42,6 +51,8 @@ fn animation_loop<S: 'static, F: FnMut(&mut AnimationContext<S>) + 'static>(
                 .unchecked_ref(),
         );
     }));
+
+    // Request initial animation frame
     window().unwrap().request_animation_frame(
         frame_fn1
             .borrow()
@@ -50,6 +61,7 @@ fn animation_loop<S: 'static, F: FnMut(&mut AnimationContext<S>) + 'static>(
             .as_ref()
             .unchecked_ref(),
     )?;
+
     Ok(())
 }
 
@@ -63,9 +75,8 @@ fn loop_fn(ctx: &mut AnimationContext<AnimState>) {
     let state = &mut ctx.anim_state;
 
     // Draw something
-    ctx2d.clear_rect(0.0, 0.0, 1200.0, 900.0);
-    ctx2d.rect(state.position.0, state.position.1, 100.0, 100.0);
-    ctx2d.fill();
+    ctx2d.clear_rect(0.0, 0.0, ctx.canvas_width as f64, ctx.canvas_height as f64);
+    ctx2d.fill_rect(state.position.0, state.position.1, 100.0, 100.0);
 
     // Update state
     state.position = (
@@ -76,6 +87,7 @@ fn loop_fn(ctx: &mut AnimationContext<AnimState>) {
 
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
+    // Initialize
     console_error_panic_hook::set_once();
     console_log!("main() function in lib.rs called");
 
@@ -99,7 +111,7 @@ pub fn main() -> Result<(), JsValue> {
     // Start an animation loop
     let initial_state = AnimState {
         position: (20.0, 20.0),
-        velocity: (1.0, 0.0),
+        velocity: (1.0, 0.5),
     };
-    animation_loop(ctx2d, loop_fn, initial_state)
+    animation_loop(canvas, ctx2d, loop_fn, initial_state)
 }
