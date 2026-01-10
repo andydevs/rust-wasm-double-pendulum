@@ -9,39 +9,20 @@ macro_rules! console_log {
     };
 }
 
-struct AnimationContext<S> {
-    canvas_width: u32,
-    canvas_height: u32,
-    canvas_context: CanvasRenderingContext2d,
-    frame_number: u32,
-    anim_state: S,
-}
-
-fn animation_loop<S: 'static, F: FnMut(&mut AnimationContext<S>) + 'static>(
-    canvas: HtmlCanvasElement,
-    canvas_context: CanvasRenderingContext2d,
-    mut f: F,
-    initial_state: S,
-) -> Result<(), JsValue> {
+fn run_request_animation_frame_loop<F: FnMut() + 'static>(mut callback: F) -> Result<(), JsValue> {
     // Two pointers to a frame function so that one
     // can be called within the function while we're
     // defining it on the other one...
     let frame_fn0 = Rc::new(RefCell::new(None::<Closure<dyn FnMut()>>));
     let frame_fn1 = frame_fn0.clone();
 
-    // Initialize animation context
-    let mut ctx = AnimationContext {
-        canvas_width: canvas.width(),
-        canvas_height: canvas.height(),
-        anim_state: initial_state,
-        canvas_context: canvas_context,
-        frame_number: 0,
-    };
-
     // Create callback in borrow
     *frame_fn1.borrow_mut() = Some(Closure::new(move || {
-        f(&mut ctx);
-        ctx.frame_number += 1;
+        // Call function.
+        // Function mutates values internally
+        callback();
+
+        // Request new animation frame
         let _ = window().unwrap().request_animation_frame(
             frame_fn0
                 .borrow()
@@ -61,8 +42,40 @@ fn animation_loop<S: 'static, F: FnMut(&mut AnimationContext<S>) + 'static>(
             .as_ref()
             .unchecked_ref(),
     )?;
-
     Ok(())
+}
+
+struct AnimationContext<S> {
+    canvas_width: u32,
+    canvas_height: u32,
+    canvas_context: CanvasRenderingContext2d,
+    frame_number: u32,
+    anim_state: S,
+}
+
+fn run_simulation_loop<S: 'static, F: FnMut(&mut AnimationContext<S>) + 'static>(
+    canvas: HtmlCanvasElement,
+    ctx2d: CanvasRenderingContext2d,
+    initial_state: S,
+    mut render_update: F,
+) -> Result<(), JsValue> {
+    // Initialize animation context
+    let mut ctx = AnimationContext {
+        canvas_width: canvas.width(),
+        canvas_height: canvas.height(),
+        anim_state: initial_state,
+        canvas_context: ctx2d,
+        frame_number: 0,
+    };
+
+    // Begin animation loop
+    run_request_animation_frame_loop(move || {
+        // Call render update
+        render_update(&mut ctx);
+
+        // Update frame number
+        ctx.frame_number += 1;
+    })
 }
 
 struct AnimState {
@@ -71,12 +84,14 @@ struct AnimState {
 }
 
 fn loop_fn(ctx: &mut AnimationContext<AnimState>) {
-    let ctx2d = &ctx.canvas_context;
     let state = &mut ctx.anim_state;
 
     // Draw something
-    ctx2d.clear_rect(0.0, 0.0, ctx.canvas_width as f64, ctx.canvas_height as f64);
-    ctx2d.fill_rect(state.position.0, state.position.1, 100.0, 100.0);
+    {
+        let ctx2d = &ctx.canvas_context;
+        ctx2d.clear_rect(0.0, 0.0, ctx.canvas_width as f64, ctx.canvas_height as f64);
+        ctx2d.fill_rect(state.position.0, state.position.1, 100.0, 100.0);
+    }
 
     // Update state
     state.position = (
@@ -113,5 +128,5 @@ pub fn main() -> Result<(), JsValue> {
         position: (20.0, 20.0),
         velocity: (1.0, 0.5),
     };
-    animation_loop(canvas, ctx2d, loop_fn, initial_state)
+    run_simulation_loop(canvas, ctx2d, initial_state, loop_fn)
 }
