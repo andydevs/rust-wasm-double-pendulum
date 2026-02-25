@@ -53,7 +53,7 @@ struct SimulationRunner<S: Simulation> {
 }
 
 impl SimulationRunner {
-    fn initialize(state: S) -> Self {
+    fn initialize(state: S, ctx2d: CanvasRenderingContext2d, canvas: HtmlCanvasElement) -> Self {
         // Call Simulation initialize
     }
 
@@ -62,6 +62,9 @@ impl SimulationRunner {
         // Initialize variables
 
         anim_frame_loop(move |time| {
+            // Update frame information
+
+            // Clear screen
             // Build render ctx
             self.simulation.render(/* render ctx */);
 

@@ -1,16 +1,11 @@
+#[macro_use]
+mod macros;
 mod anim;
 
 use wasm_bindgen::prelude::*;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, window};
 
 use crate::anim::animation_frame_loop;
-
-#[allow(unused_macros)]
-macro_rules! console_log {
-    ($($t:tt)*) => {
-        web_sys::console::log_1(&format!($($t)*).into())
-    };
-}
 
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
@@ -35,13 +30,28 @@ pub fn main() -> Result<(), JsValue> {
         .dyn_into::<CanvasRenderingContext2d>()?;
     console_log!("Get render context");
 
-    let mut x = 2.0;
-    let mut y = 1.0;
-    animation_frame_loop(move || {
-        (&ctx2d).clear_rect(0.0, 0.0, canvas.width() as f64, canvas.height() as f64);
-        (&ctx2d).fill_rect(x, y, 10.0, 10.0);
+    // Simulation State
+    let mut x = (2.0, canvas.height() as f64 - 3.0);
+    let mut v = (0.3, -1.0);
+    let a = (0.0, 0.001);
 
-        x += 0.2;
-        y += 0.8;
+    // Runner State
+    let mut last = None;
+
+    // Frame loop
+    animation_frame_loop(move |ts| {
+        let dt = ts - last.unwrap_or(ts);
+
+        // Render step
+        (&ctx2d).clear_rect(0.0, 0.0, canvas.width() as f64, canvas.height() as f64);
+        (&ctx2d).fill_rect(x.0, x.1, 10.0, 10.0);
+
+        // Update step
+        x.0 += v.0 * dt;
+        x.1 += v.1 * dt;
+        v.0 += a.0 * dt;
+        v.1 += a.1 * dt;
+
+        last = Some(ts);
     })
 }
