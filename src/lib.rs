@@ -1,18 +1,45 @@
 #[macro_use]
 mod macros;
-mod anim;
+mod jsanim;
+mod runner;
+mod sim;
 
 use wasm_bindgen::prelude::*;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, window};
 
-use crate::anim::animation_frame_loop;
+use crate::{
+    jsanim::WindowCtx,
+    runner::SimulationRunner,
+    sim::{RenderCtx, Simulation, UpdateCtx},
+};
 
-#[wasm_bindgen(start)]
-pub fn main() -> Result<(), JsValue> {
-    // Initialize
-    console_error_panic_hook::set_once();
-    console_log!("main() function in lib.rs called");
+pub struct State {
+    pub x: (f64, f64),
+    pub v: (f64, f64),
+    a: (f64, f64),
+}
 
+impl State {
+    pub fn initial(x: (f64, f64), v: (f64, f64), a: (f64, f64)) -> Self {
+        Self { x, v, a }
+    }
+}
+
+impl Simulation for State {
+    fn render(&self, render: &RenderCtx) {
+        render.window.clear();
+        render.window.circle(self.x.0, self.x.1, 10.0, "#00aabb");
+    }
+
+    fn update(&mut self, update: &UpdateCtx) {
+        self.x.0 += self.v.0 * update.frame.dt;
+        self.x.1 += self.v.1 * update.frame.dt;
+        self.v.0 += self.a.0 * update.frame.dt;
+        self.v.1 += self.a.1 * update.frame.dt;
+    }
+}
+
+fn get_window_ctx() -> Result<WindowCtx, JsValue> {
     // Get canvas
     let canvas = window()
         .ok_or(JsValue::from("Unable to get browser window!"))?
@@ -24,34 +51,33 @@ pub fn main() -> Result<(), JsValue> {
     console_log!("Get canvas");
 
     // Get canvas rendering context
-    let ctx2d = canvas
+    let ctx = canvas
         .get_context("2d")?
         .ok_or(JsValue::from("Could not create 2D drawing context!"))?
         .dyn_into::<CanvasRenderingContext2d>()?;
     console_log!("Get render context");
 
-    // Simulation State
-    let mut x = (2.0, canvas.height() as f64 - 3.0);
-    let mut v = (0.3, -1.0);
-    let a = (0.0, 0.001);
+    // Return window
+    let window = WindowCtx::new(canvas, ctx);
+    Ok(window)
+}
 
-    // Runner State
-    let mut last = None;
+#[wasm_bindgen(start)]
+pub fn main() -> Result<(), JsValue> {
+    // Initialize
+    console_error_panic_hook::set_once();
+    console_log!("main() function in lib.rs called");
 
-    // Frame loop
-    animation_frame_loop(move |ts| {
-        let dt = ts - last.unwrap_or(ts);
+    // Get window context
+    let window = get_window_ctx()?;
 
-        // Render step
-        (&ctx2d).clear_rect(0.0, 0.0, canvas.width() as f64, canvas.height() as f64);
-        (&ctx2d).fill_rect(x.0, x.1, 10.0, 10.0);
+    // Initial state
+    let state = State::initial(
+        (15.0, window.canvas.height() as f64 - 15.0),
+        (0.4, -1.0),
+        (0.0, 0.001),
+    );
 
-        // Update step
-        x.0 += v.0 * dt;
-        x.1 += v.1 * dt;
-        v.0 += a.0 * dt;
-        v.1 += a.1 * dt;
-
-        last = Some(ts);
-    })
+    // Run simulation
+    SimulationRunner::new(state, window).run()
 }
