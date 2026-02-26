@@ -1,51 +1,21 @@
 #[macro_use]
 mod macros;
 mod jsanim;
+mod pendulum;
 mod runner;
 mod sim;
 
+use crate::{jsanim::WindowCtx, pendulum::Pendulum, runner::SimulationRunner};
 use wasm_bindgen::prelude::*;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, window};
 
-use crate::{
-    jsanim::WindowCtx,
-    runner::SimulationRunner,
-    sim::{RenderCtx, Simulation, UpdateCtx},
-};
-
-pub struct State {
-    pub x: (f64, f64),
-    pub v: (f64, f64),
-    a: (f64, f64),
-}
-
-impl State {
-    pub fn initial(x: (f64, f64), v: (f64, f64), a: (f64, f64)) -> Self {
-        Self { x, v, a }
-    }
-}
-
-impl Simulation for State {
-    fn render(&self, render: &RenderCtx) {
-        render.window.clear();
-        render.window.circle(self.x.0, self.x.1, 10.0, "#00aabb");
-    }
-
-    fn update(&mut self, update: &UpdateCtx) {
-        self.x.0 += self.v.0 * update.frame.dt;
-        self.x.1 += self.v.1 * update.frame.dt;
-        self.v.0 += self.a.0 * update.frame.dt;
-        self.v.1 += self.a.1 * update.frame.dt;
-    }
-}
-
-fn get_window_ctx() -> Result<WindowCtx, JsValue> {
+fn get_window_ctx(id: &str) -> Result<WindowCtx, JsValue> {
     // Get canvas
     let canvas = window()
         .ok_or(JsValue::from("Unable to get browser window!"))?
         .document()
         .ok_or(JsValue::from("Unable to get document!"))?
-        .get_element_by_id("render-canvas")
+        .get_element_by_id(id)
         .ok_or(JsValue::from("Couldn't find #render-canvas!"))?
         .dyn_into::<HtmlCanvasElement>()?;
     console_log!("Get canvas");
@@ -69,10 +39,10 @@ pub fn main() -> Result<(), JsValue> {
     console_log!("main() function in lib.rs called");
 
     // Get window context
-    let window = get_window_ctx()?;
+    let window = get_window_ctx("render-canvas")?;
 
     // Initial state
-    let state = State::initial(
+    let state = Pendulum::initial(
         (15.0, window.canvas.height() as f64 - 15.0),
         (0.4, -1.0),
         (0.0, 0.001),
