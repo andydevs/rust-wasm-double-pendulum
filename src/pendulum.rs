@@ -1,4 +1,7 @@
-use crate::sim::{RenderCtx, Simulation, UpdateCtx};
+use crate::{
+    anim::{FilledCircle, Line, Style},
+    sim::{RenderCtx, Simulation, UpdateCtx},
+};
 
 /// Acceleration due to gravity on Earth
 const GRAVITY: f64 = 9.81;
@@ -45,10 +48,23 @@ impl Simulation for Pendulum {
         let x1 = x0 + self.length * METERS_TO_PIXELS * s;
         let y1 = y0 + self.length * METERS_TO_PIXELS * c;
 
+        // Render
         render.window.clear();
-        render.window.line(x0, y0, x1, y1, "#ffff00");
-        render.window.circle(x0, y0, 5.0, "#ffffff");
-        render.window.circle(x1, y1, 10.0, "#00aaff");
+        render.window.draw(&Style {
+            stroke_style: Some("#ffff00".into()),
+            fill_style: None,
+            contained: Line(x0, y0, x1, y1),
+        });
+        render.window.draw(&Style {
+            fill_style: Some("#ffffff".into()),
+            stroke_style: None,
+            contained: FilledCircle((x0, y0), 5.0),
+        });
+        render.window.draw(&Style {
+            fill_style: Some("#00aaff".into()),
+            stroke_style: None,
+            contained: FilledCircle((x1, y1), 10.0),
+        });
     }
 
     /// Updates the pendulum's state based on the update context.

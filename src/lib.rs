@@ -1,16 +1,23 @@
 #[macro_use]
 mod macros;
-mod jsanim;
+mod anim;
 mod pendulum;
 mod runner;
 mod sim;
 
-use crate::jsanim::WindowCtx;
+use crate::anim::WindowCtx;
 use crate::pendulum::Pendulum;
 use crate::runner::SimulationRunner;
 use std::f64::consts::PI;
 use wasm_bindgen::prelude::*;
 
+/// Entry point for the WebAssembly module.
+///
+/// Initializes the double pendulum simulation, sets up the canvas and rendering context,
+/// and starts the main simulation loop.
+///
+/// # Errors
+/// Returns a `JsValue` error if canvas initialization or the simulation loop fails.
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
     // Initialize
