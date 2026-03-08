@@ -1,14 +1,8 @@
 use crate::{
+    consts::{GRAVITY, METERS_TO_PIXELS},
     draw::{FilledCircle, Line, Style},
     sim::{RenderCtx, Simulation, UpdateCtx},
 };
-
-/// Acceleration due to gravity on Earth
-const GRAVITY: f64 = 9.81;
-
-/// A conversion between meters irl to pixels in screen space
-/// I.e. how many pixels long represents a meter.
-const METERS_TO_PIXELS: f64 = 200.0;
 
 /// Represents a single pendulum in the simulation.
 ///
