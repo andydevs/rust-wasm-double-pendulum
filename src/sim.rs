@@ -1,4 +1,7 @@
-use crate::anim::{FrameCtx, WindowCtx};
+use crate::{
+    anim::FrameCtx,
+    draw::WindowCtx,
+};
 
 /// Context for rendering a frame of the simulation.
 ///

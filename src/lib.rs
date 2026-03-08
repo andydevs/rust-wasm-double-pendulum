@@ -1,11 +1,12 @@
 #[macro_use]
 mod macros;
 mod anim;
+mod draw;
 mod pendulum;
 mod runner;
 mod sim;
 
-use crate::anim::WindowCtx;
+use crate::draw::WindowCtx;
 use crate::pendulum::Pendulum;
 use crate::runner::SimulationRunner;
 use std::f64::consts::PI;

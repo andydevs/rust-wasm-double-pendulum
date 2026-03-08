@@ -1,7 +1,8 @@
 use wasm_bindgen::JsValue;
 
 use crate::{
-    anim::{AnimationLoopRunner, FrameCtx, WindowCtx},
+    anim::{AnimationLoopRunner, FrameCtx},
+    draw::WindowCtx,
     sim::{RenderCtx, Simulation, UpdateCtx},
 };
 

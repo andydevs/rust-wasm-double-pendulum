@@ -1,5 +1,5 @@
 use crate::{
-    anim::{FilledCircle, Line, Style},
+    draw::{FilledCircle, Line, Style},
     sim::{RenderCtx, Simulation, UpdateCtx},
 };
 
