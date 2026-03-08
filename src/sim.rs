@@ -1,7 +1,4 @@
-use crate::{
-    anim::FrameCtx,
-    draw::WindowCtx,
-};
+use crate::{anim::FrameCtx, draw::Draw, window::WindowCtx};
 
 /// Context for rendering a frame of the simulation.
 ///
@@ -11,6 +8,25 @@ use crate::{
 pub struct RenderCtx<'s> {
     pub window: &'s WindowCtx,
     pub frame: &'s FrameCtx,
+}
+
+impl<'s> RenderCtx<'s> {
+    /// Clears the canvas.
+    ///
+    /// Fills the entire canvas with a blank state, removing any previously drawn content.
+    pub fn clear(&self) {
+        self.window.clear();
+    }
+
+    /// Draws a drawable object to the canvas.
+    ///
+    /// Takes any object implementing the `Draw` trait and renders it to the canvas.
+    ///
+    /// # Arguments
+    /// * `d` - A trait object implementing `Draw` to be rendered.
+    pub fn draw(&self, d: &dyn Draw) {
+        self.window.draw(d);
+    }
 }
 
 /// Context for updating the simulation.

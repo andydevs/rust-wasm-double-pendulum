@@ -1,45 +1,26 @@
+use crate::window::WindowCtx;
 use std::f64::consts::TAU;
-use wasm_bindgen::JsCast;
-use wasm_bindgen::prelude::*;
-use web_sys::window;
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 
-/// Context for the window and canvas,
-/// providing utilities for drawing on the canvas.
-pub struct WindowCtx {
-    pub ctx: CanvasRenderingContext2d,
-    pub canvas: HtmlCanvasElement,
+/// Trait for objects that can be drawn on a canvas.
+///
+/// Types implementing this trait can be rendered to a canvas by calling
+/// the `draw` method with a `WindowCtx` providing access to the canvas
+/// rendering context.
+pub trait Draw {
+    fn draw(&self, window: &WindowCtx);
 }
 
-/// A wrapper for applying styling to drawable objects.
+/// Trait for objects that can be styled.
 ///
-/// This struct applies fill and stroke styles to any drawable object
-/// without modifying the original. It uses the canvas context's save/restore
-/// mechanism to ensure styles are properly scoped and don't affect other drawings.
-///
-/// # Type Parameters
-/// * `C` - The contained drawable type.
-pub struct Style<C: Draw> {
-    pub contained: C,
-    pub fill_style: Option<String>,
-    pub stroke_style: Option<String>,
-}
-
-impl<C: Draw> Draw for Style<C> {
-    /// Draws the contained drawable with the specified fill and stroke styles applied.
+/// Types implementing this trait can be wrapped with styling information
+/// via the `styled` method, which returns a `Styled<Self>` wrapper that
+/// allows applying fill and stroke styles to the drawable.
+pub trait Style: Draw + Sized {
+    /// Wraps this drawable in a `Styled` wrapper to apply styling.
     ///
-    /// This method saves the current canvas state, applies the configured styles,
-    /// draws the contained object, and then restores the canvas state.
-    fn draw(&self, window: &WindowCtx) {
-        window.ctx.save();
-        if let Some(fill) = &self.fill_style {
-            window.ctx.set_fill_style_str(&fill);
-        }
-        if let Some(stroke) = &self.stroke_style {
-            window.ctx.set_stroke_style_str(&stroke);
-        }
-        self.contained.draw(window);
-        window.ctx.restore();
+    /// Returns a new `Styled` instance that can be configured with fill and stroke styles.
+    fn styled(self) -> Styled<Self> {
+        Styled::new(self)
     }
 }
 
@@ -64,6 +45,8 @@ impl Draw for FilledCircle {
         window.ctx.fill();
     }
 }
+
+impl Style for FilledCircle {}
 
 /// A line segment drawable.
 ///
@@ -90,54 +73,91 @@ impl Draw for Line {
     }
 }
 
-/// Trait for objects that can be drawn on a canvas.
+impl Style for Line {}
+
+/// A wrapper for applying styling to drawable objects.
 ///
-/// Types implementing this trait can be rendered to a canvas by calling
-/// the `draw` method with a `WindowCtx` providing access to the canvas
-/// rendering context.
-pub trait Draw {
-    fn draw(&self, window: &WindowCtx);
+/// This struct applies fill and stroke styles to any drawable object
+/// without modifying the original. It uses the canvas context's save/restore
+/// mechanism to ensure styles are properly scoped and don't affect other drawings.
+///
+/// # Type Parameters
+/// * `C` - The contained drawable type.
+pub struct Styled<C: Draw> {
+    // Contained drawable
+    contained: C,
+
+    // Style Options
+    fill: Option<String>,
+    stroke: Option<String>,
 }
 
-impl WindowCtx {
-    /// Creates a new WindowCtx from a canvas element with the given ID.
-    pub fn from_canvas_id(id: &str) -> Result<Self, JsValue> {
-        // Get canvas
-        let canvas = window()
-            .ok_or(JsValue::from("Unable to get browser window!"))?
-            .document()
-            .ok_or(JsValue::from("Unable to get document!"))?
-            .get_element_by_id(id)
-            .ok_or(JsValue::from("Couldn't find #render-canvas!"))?
-            .dyn_into::<HtmlCanvasElement>()?;
-        console_log!("Get canvas for id {}", id);
+/// Macro for generating style builder methods and an `apply_style` helper.
+///
+/// This macro generates:
+/// - An `apply_style` method that applies all configured optional styles to the canvas
+/// - Builder methods for each option that return `Self` for method chaining
+///
+/// # Arguments
+/// - `$opt:ident` - The field name (e.g., `fill`, `stroke`)
+/// - `$typ:ty` - The field type (e.g., `String`)
+/// - `$ctxmethod:ident` - The canvas context method to call (e.g., `set_fill_style_str`)
+///
+/// # Example
+/// ```ignore
+/// handle_opts![
+///     fill: String => set_fill_style_str,
+///     stroke: String => set_stroke_style_str
+/// ];
+/// ```
+macro_rules! handle_opts {
+    ($($opt:ident: $typ:ty => $ctxmethod:ident),+) => {
+        fn apply_style(&self, window: &WindowCtx) {
+            $(
+                if let Some($opt) = &self.$opt {
+                    window.ctx.$ctxmethod(&$opt);
+                }
+            )+
+        }
+        $(
+            pub fn $opt(self, value: $typ) -> Self {
+                Self {
+                    $opt: Some(value),
+                    ..self
+                }
+            }
+        )+
+    };
+}
 
-        // Get canvas rendering context
-        let ctx = canvas
-            .get_context("2d")?
-            .ok_or(JsValue::from("Could not create 2D drawing context!"))?
-            .dyn_into::<CanvasRenderingContext2d>()?;
-        console_log!("Get 2d render context");
-
-        // Return window
-        let window = Self::new(canvas, ctx);
-        Ok(window)
+impl<C: Draw> Styled<C> {
+    /// Creates a new `Styled` wrapper with no styles applied.
+    ///
+    /// # Arguments
+    /// * `contained` - The drawable object to wrap.
+    fn new(contained: C) -> Self {
+        Self {
+            contained,
+            fill: None,
+            stroke: None,
+        }
     }
 
-    /// Creates a new WindowCtx with the given canvas and rendering context.
-    pub fn new(canvas: HtmlCanvasElement, ctx: CanvasRenderingContext2d) -> Self {
-        Self { ctx, canvas }
-    }
+    handle_opts![
+        fill: String => set_fill_style_str,
+        stroke: String => set_stroke_style_str
+    ];
+}
 
-    /// Double-dispatch draw method
-    pub fn draw(&self, d: &dyn Draw) {
-        d.draw(self);
-    }
-
-    /// Clears the entire canvas.
-    pub fn clear(&self) {
-        let width = self.canvas.width() as f64;
-        let height = self.canvas.height() as f64;
-        self.ctx.clear_rect(0.0, 0.0, width, height);
+impl<C: Draw> Draw for Styled<C> {
+    /// Draws the contained drawable with the specified fill and stroke styles applied.
+    ///
+    /// This method saves the current canvas state, applies the configured styles,
+    /// draws the contained object, and then restores the canvas state.
+    fn draw(&self, window: &WindowCtx) {
+        window.ctx.save();
+        self.apply_style(window);
+        self.contained.draw(window);
+        window.ctx.restore();
     }
 }

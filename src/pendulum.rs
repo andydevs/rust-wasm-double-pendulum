@@ -49,22 +49,10 @@ impl Simulation for Pendulum {
         let y1 = y0 + self.length * METERS_TO_PIXELS * c;
 
         // Render
-        render.window.clear();
-        render.window.draw(&Style {
-            stroke_style: Some("#ffff00".into()),
-            fill_style: None,
-            contained: Line(x0, y0, x1, y1),
-        });
-        render.window.draw(&Style {
-            fill_style: Some("#ffffff".into()),
-            stroke_style: None,
-            contained: FilledCircle((x0, y0), 5.0),
-        });
-        render.window.draw(&Style {
-            fill_style: Some("#00aaff".into()),
-            stroke_style: None,
-            contained: FilledCircle((x1, y1), 10.0),
-        });
+        render.clear();
+        render.draw(&Line(x0, y0, x1, y1).styled().stroke("#ffff00".into()));
+        render.draw(&FilledCircle((x0, y0), 5.0).styled().fill("#ffffff".into()));
+        render.draw(&FilledCircle((x1, y1), 10.0).styled().fill("#00aaff".into()));
     }
 
     /// Updates the pendulum's state based on the update context.

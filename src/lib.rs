@@ -5,10 +5,11 @@ mod draw;
 mod pendulum;
 mod runner;
 mod sim;
+mod window;
 
-use crate::draw::WindowCtx;
 use crate::pendulum::Pendulum;
 use crate::runner::SimulationRunner;
+use crate::window::WindowCtx;
 use std::f64::consts::PI;
 use wasm_bindgen::prelude::*;
 
@@ -29,7 +30,7 @@ pub fn main() -> Result<(), JsValue> {
     let window = WindowCtx::from_canvas_id("render-canvas")?;
 
     // Initial state
-    let state = Pendulum::new(2.0, 0.1, PI / 8.0, 0.0);
+    let state = Pendulum::new(2.0, 0.01, PI / 4.0, 0.0);
 
     // Run simulation
     SimulationRunner::new(state, window).run()

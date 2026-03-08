@@ -12,6 +12,7 @@ pub struct FrameCtx {
     pub dt: f64,
     pub ts: f64,
 }
+
 /// requestAnimationFrame.
 ///
 /// This struct encapsulates the logic for running a continuous

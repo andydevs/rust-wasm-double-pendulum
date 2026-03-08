@@ -2,8 +2,8 @@ use wasm_bindgen::JsValue;
 
 use crate::{
     anim::{AnimationLoopRunner, FrameCtx},
-    draw::WindowCtx,
     sim::{RenderCtx, Simulation, UpdateCtx},
+    window::WindowCtx,
 };
 
 /// Runner for managing a simulation with rendering and updates in an animation loop.
