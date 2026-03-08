@@ -16,7 +16,6 @@ const METERS_TO_PIXELS: f64 = 200.0;
 /// tracks its current angle (theta) and angular velocity (omega).
 pub struct Pendulum {
     pub length: f64,
-    pub damping: f64,
     theta: f64,
     omega: f64,
 }
@@ -24,10 +23,9 @@ pub struct Pendulum {
 impl Pendulum {
     /// Creates a new Pendulum with the specified length,
     /// damping, initial angle, and initial angular velocity.
-    pub fn new(length: f64, damping: f64, theta_init: f64, omega_init: f64) -> Self {
+    pub fn new(length: f64, theta_init: f64, omega_init: f64) -> Self {
         Self {
             length,
-            damping,
             theta: theta_init,
             omega: omega_init,
         }
@@ -65,8 +63,7 @@ impl Simulation for Pendulum {
     fn update(&mut self, update: &UpdateCtx) {
         let dt = update.frame.dt;
         let gravity = -self.theta.sin() * GRAVITY / self.length;
-        let damping = -self.damping * self.omega;
         self.theta += self.omega * dt;
-        self.omega += (gravity + damping) * dt;
+        self.omega += gravity * dt;
     }
 }

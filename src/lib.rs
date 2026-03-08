@@ -30,7 +30,7 @@ pub fn main() -> Result<(), JsValue> {
     let window = WindowCtx::from_canvas_id("render-canvas")?;
 
     // Initial state
-    let state = Pendulum::new(2.0, 0.01, PI / 4.0, 0.0);
+    let state = Pendulum::new(2.0, PI / 4.0, 0.0);
 
     // Run simulation
     SimulationRunner::new(state, window).run()
