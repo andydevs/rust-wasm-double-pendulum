@@ -1,5 +1,5 @@
 use crate::{
-    consts::{GRAVITY, METERS_TO_PIXELS},
+    consts::{GRAVITY, METERS_TO_PIXELS, MILLIS_PER_SEC},
     draw::{FilledCircle, Line, Style},
     sim::{RenderCtx, Simulation, UpdateCtx},
 };
@@ -55,7 +55,7 @@ impl Simulation for Pendulum {
     /// dtheta/dt = omega
     /// domega/dt = -(gravity contribution) - dampening
     fn update(&mut self, update: &UpdateCtx) {
-        let dt = update.frame.dt;
+        let dt = update.frame.delta / MILLIS_PER_SEC;
         let gravity = -self.theta.sin() * GRAVITY / self.length;
         self.theta += self.omega * dt;
         self.omega += gravity * dt;

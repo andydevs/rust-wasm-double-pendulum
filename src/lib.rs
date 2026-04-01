@@ -1,6 +1,5 @@
 #[macro_use]
 mod macros;
-mod anim;
 mod consts;
 mod double_pendulum;
 mod draw;

@@ -4,7 +4,6 @@ use wasm_bindgen::JsValue;
 use wasm_raf_handler::{FrameCtx, RAFLoop};
 
 use crate::{
-    consts::MILLIS_PER_SEC,
     sim::{RenderCtx, Simulation, UpdateCtx},
     window::WindowCtx,
 };
@@ -47,24 +46,15 @@ impl<S: Simulation + 'static> SimulationRunner<S> {
         let inner_window = Rc::clone(&self.window);
         let inner_sim = Rc::clone(&self.sim);
         let rafloop = RAFLoop::new(move |frame: FrameCtx| {
-            // Create old frame ctx
-            let old_frame_ctx = crate::anim::FrameCtx {
-                frame: frame.frame_count,
-                dt: frame.delta / MILLIS_PER_SEC,
-                ts: frame.timestamp,
-            };
-
             // Render sim
             let render = RenderCtx {
                 window: &inner_window,
-                frame: &old_frame_ctx,
+                frame: &frame,
             };
             inner_sim.borrow().render(&render);
 
             // Update sim
-            let update = UpdateCtx {
-                frame: &old_frame_ctx,
-            };
+            let update = UpdateCtx { frame: &frame };
             inner_sim.borrow_mut().update(&update);
         })?;
         self.rafloop = Some(rafloop);

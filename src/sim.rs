@@ -1,4 +1,5 @@
-use crate::{anim::FrameCtx, draw::Draw, window::WindowCtx};
+use crate::{draw::Draw, window::WindowCtx};
+use wasm_raf_handler::FrameCtx;
 
 /// Context for rendering a frame of the simulation.
 ///

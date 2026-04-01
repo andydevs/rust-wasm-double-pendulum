@@ -1,5 +1,5 @@
 use crate::{
-    consts::{GRAVITY, METERS_TO_PIXELS},
+    consts::{GRAVITY, METERS_TO_PIXELS, MILLIS_PER_SEC},
     draw::{FilledCircle, Line, Style},
     sim::{RenderCtx, Simulation, UpdateCtx},
 };
@@ -88,7 +88,7 @@ impl Simulation for DoublePendulum {
     /// domega/dt = -(gravity contribution) - dampening
     fn update(&mut self, update: &UpdateCtx) {
         // time delta
-        let dt = update.frame.dt;
+        let dt = update.frame.delta / MILLIS_PER_SEC;
 
         // Acceleration terms
         let sin_1 = self.theta_1.sin();
