@@ -1,3 +1,9 @@
+//! WebAssembly double pendulum simulation.
+//!
+//! This crate implements a real-time double pendulum physics simulation rendered
+//! to an HTML5 canvas via WebAssembly. It is compiled as a `wasm-bindgen` library
+//! and driven by the browser's `requestAnimationFrame` loop.
+
 #[macro_use]
 mod macros;
 mod consts;

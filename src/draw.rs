@@ -1,3 +1,9 @@
+//! Trait-based drawing and styling system for the HTML5 canvas.
+//!
+//! Provides the [`Draw`] and [`Style`] traits along with concrete drawable
+//! types ([`FilledCircle`], [`Line`]) and a [`Styled`] wrapper for applying
+//! fill/stroke colours to any drawable without mutating it.
+
 use crate::window::WindowCtx;
 use std::f64::consts::TAU;
 
@@ -7,6 +13,7 @@ use std::f64::consts::TAU;
 /// the `draw` method with a `WindowCtx` providing access to the canvas
 /// rendering context.
 pub trait Draw {
+    /// Renders this object onto the canvas provided by `window`.
     fn draw(&self, window: &WindowCtx);
 }
 

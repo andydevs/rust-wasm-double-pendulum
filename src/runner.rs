@@ -1,3 +1,9 @@
+//! Animation loop management for running simulations in the browser.
+//!
+//! [`SimulationRunner`] wires a [`Simulation`] to the browser's
+//! `requestAnimationFrame` loop via [`wasm_raf_handler::RAFLoop`], calling
+//! `render` then `update` on each frame.
+
 use std::{cell::RefCell, rc::Rc};
 
 use wasm_bindgen::JsValue;
@@ -16,8 +22,11 @@ use crate::{
 /// # Type Parameters
 /// * `S` - The simulation type that implements the `Simulation` trait.
 pub struct SimulationRunner<S: Simulation + 'static> {
+    /// The active `requestAnimationFrame` loop handle. `None` until [`run`](Self::run) is called.
     rafloop: Option<RAFLoop>,
+    /// Shared reference to the window and canvas context used for rendering.
     window: Rc<WindowCtx>,
+    /// Shared, interior-mutable reference to the simulation state.
     sim: Rc<RefCell<S>>,
 }
 
