@@ -4,6 +4,7 @@ use wasm_bindgen::JsValue;
 use wasm_raf_handler::{FrameCtx, RAFLoop};
 
 use crate::{
+    consts::MILLIS_PER_SEC,
     sim::{RenderCtx, Simulation, UpdateCtx},
     window::WindowCtx,
 };
@@ -43,37 +44,29 @@ impl<S: Simulation + 'static> SimulationRunner<S> {
     /// # Errors
     /// Returns a `JsValue` error if the animation frame request fails.
     pub fn run(&mut self) -> Result<(), JsValue> {
-        console_log!("Create Rc clones");
         let inner_window = Rc::clone(&self.window);
         let inner_sim = Rc::clone(&self.sim);
-        console_log!("Create RAFLoop");
         let rafloop = RAFLoop::new(move |frame: FrameCtx| {
-            console_log!("Create old frame context");
+            // Create old frame ctx
             let old_frame_ctx = crate::anim::FrameCtx {
                 frame: frame.frame_count,
-                dt: frame.delta,
+                dt: frame.delta / MILLIS_PER_SEC,
                 ts: frame.timestamp,
             };
 
-            {
-                // Render sim
-                console_log!("Render simulation");
-                let render = RenderCtx {
-                    window: &inner_window,
-                    frame: &old_frame_ctx,
-                };
-                inner_sim.borrow().render(&render);
+            // Render sim
+            let render = RenderCtx {
+                window: &inner_window,
+                frame: &old_frame_ctx,
             };
-            {
-                // Update sim
-                console_log!("Update simulation");
-                let update = UpdateCtx {
-                    frame: &old_frame_ctx,
-                };
-                inner_sim.borrow_mut().update(&update);
+            inner_sim.borrow().render(&render);
+
+            // Update sim
+            let update = UpdateCtx {
+                frame: &old_frame_ctx,
             };
+            inner_sim.borrow_mut().update(&update);
         })?;
-        console_log!("Set RAFLoop");
         self.rafloop = Some(rafloop);
         Ok(())
     }

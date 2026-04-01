@@ -40,6 +40,11 @@ pub fn main() -> Result<(), JsValue> {
     // let state = Pendulum::new(2.0, PI / 4.0, 0.0);
     let state = DoublePendulum::new(1.0, 1.0, PI / 4.0, 0.0, 0.0, 0.0);
 
-    // Run simulation
-    SimulationRunner::new(state, window).run()
+    // Run simulation. Leak memory so it stays in window
+    let mut sim = Box::new(SimulationRunner::new(state, window));
+    sim.run()?;
+    Box::leak::<'static>(sim);
+
+    // Exit
+    Ok(())
 }
