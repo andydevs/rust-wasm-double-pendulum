@@ -1,4 +1,11 @@
-use crate::{anim::FrameCtx, draw::Draw, window::WindowCtx};
+//! Core simulation traits and per-frame context types.
+//!
+//! Defines the [`Simulation`] trait that all physics simulations must implement,
+//! as well as the [`RenderCtx`] and [`UpdateCtx`] types that carry per-frame
+//! information into each `render` and `update` call respectively.
+
+use crate::{draw::Draw, window::WindowCtx};
+use wasm_raf_handler::FrameCtx;
 
 /// Context for rendering a frame of the simulation.
 ///
@@ -6,7 +13,9 @@ use crate::{anim::FrameCtx, draw::Draw, window::WindowCtx};
 /// Passed to the `render` method of simulations to provide drawing capabilities.
 #[allow(dead_code)]
 pub struct RenderCtx<'s> {
+    /// Canvas and window context used to issue draw calls.
     pub window: &'s WindowCtx,
+    /// Frame timing information (timestamp, delta) for the current animation frame.
     pub frame: &'s FrameCtx,
 }
 
@@ -35,6 +44,7 @@ impl<'s> RenderCtx<'s> {
 /// Passed to the `update` method of simulations to allow time-based updates.
 #[allow(dead_code)]
 pub struct UpdateCtx<'s> {
+    /// Frame timing information (timestamp, delta) for the current animation frame.
     pub frame: &'s FrameCtx,
 }
 

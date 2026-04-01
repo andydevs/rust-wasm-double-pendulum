@@ -1,18 +1,9 @@
-/// Logs formatted messages to the browser console.
+//! Utility macros for the WebAssembly environment.
+
+/// Logs a formatted message to the browser's JavaScript console.
 ///
-/// This macro provides a convenient way to log debug information to the browser's
-/// JavaScript console using the same syntax as Rust's `println!` and `format!` macros.
-///
-/// # Examples
-/// ```ignore
-/// console_log!("Hello, world!");
-/// console_log!("Value: {}", 42);
-/// console_log!("Multiple: {} and {}", "hello", "goodbye");
-/// ```
-/// Logs formatted messages to the browser console.
-///
-/// This macro provides a convenient way to log debug information to the browser's
-/// JavaScript console using the same syntax as Rust's `println!` and `format!` macros.
+/// Accepts the same format string syntax as [`format!`] / [`println!`].
+/// Internally calls `web_sys::console::log_1` with the formatted string.
 ///
 /// # Examples
 /// ```ignore

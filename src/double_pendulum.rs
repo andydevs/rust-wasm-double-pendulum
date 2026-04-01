@@ -1,25 +1,44 @@
+//! Double pendulum physics simulation.
+//!
+//! Implements the equations of motion for a planar double pendulum using
+//! Lagrangian mechanics and forward Euler numerical integration.
+
 use crate::{
-    consts::{GRAVITY, METERS_TO_PIXELS},
+    consts::{GRAVITY, METERS_TO_PIXELS, MILLIS_PER_SEC},
     draw::{FilledCircle, Line, Style},
     sim::{RenderCtx, Simulation, UpdateCtx},
 };
 
-/// Represents a single pendulum in the simulation.
+/// A double pendulum: two rigid rods connected end-to-end, each free to rotate.
 ///
-/// The pendulum has a fixed length and damping coefficient, and
-/// tracks its current angle (theta) and angular velocity (omega).
+/// Angles (`theta_1`, `theta_2`) are measured from the downward vertical in radians.
+/// Angular velocities (`omega_1`, `omega_2`) are in radians per second.
+/// Physics are integrated with a forward Euler step each frame.
 pub struct DoublePendulum {
+    /// Length of the first (upper) rod, in metres.
     pub length_1: f64,
+    /// Length of the second (lower) rod, in metres.
     pub length_2: f64,
+    /// Angle of the first joint from the downward vertical, in radians.
     theta_1: f64,
+    /// Angular velocity of the first joint, in radians per second.
     omega_1: f64,
+    /// Angle of the second joint relative to the first rod, in radians.
     theta_2: f64,
+    /// Angular velocity of the second joint, in radians per second.
     omega_2: f64,
 }
 
 impl DoublePendulum {
-    /// Creates a new DoublePendulum with the specified length,
-    /// damping, initial angle, and initial angular velocity.
+    /// Creates a new `DoublePendulum` with the given rod lengths and initial conditions.
+    ///
+    /// # Arguments
+    /// * `length_0` - Length of the first (upper) rod in metres.
+    /// * `length_1` - Length of the second (lower) rod in metres.
+    /// * `theta_0` - Initial angle of the first joint from the downward vertical, in radians.
+    /// * `omega_0` - Initial angular velocity of the first joint, in radians per second.
+    /// * `theta_1` - Initial angle of the second joint relative to the first rod, in radians.
+    /// * `omega_1` - Initial angular velocity of the second joint, in radians per second.
     pub fn new(
         length_0: f64,
         length_1: f64,
@@ -40,9 +59,12 @@ impl DoublePendulum {
 }
 
 impl Simulation for DoublePendulum {
-    /// Renders the pendulum on the provided render context.
+    /// Renders the double pendulum to the canvas.
     ///
-    /// Draws the pivot point, the rod, and the bob of the pendulum on the canvas.
+    /// Clears the canvas and draws:
+    /// - A white circle at the fixed pivot point.
+    /// - A yellow rod from the pivot to the first joint, with a green circle at the joint.
+    /// - A magenta rod from the first joint to the second bob, with a cyan circle at the bob.
     fn render(&self, render: &RenderCtx) {
         // Pivot
         let x_0 = (render.window.canvas.width() as f64) / 2.0;
@@ -79,16 +101,21 @@ impl Simulation for DoublePendulum {
         );
     }
 
-    /// Updates the pendulum's state based on the update context.
+    /// Advances the simulation by one frame using forward Euler integration.
     ///
-    /// Applies the physics equations to update
-    /// the angle and angular velocity for the next frame.
+    /// Computes the angular accelerations `alpha_1` and `alpha_2` from the
+    /// Lagrangian equations of motion for a double pendulum, then integrates:
     ///
+    /// ```text
     /// dtheta/dt = omega
-    /// domega/dt = -(gravity contribution) - dampening
+    /// domega/dt = alpha
+    /// ```
+    ///
+    /// The shared denominator term is `2 - cos²(theta_1 - theta_2)`, which arises
+    /// from the coupling between the two rods.
     fn update(&mut self, update: &UpdateCtx) {
         // time delta
-        let dt = update.frame.dt;
+        let dt = update.frame.delta / MILLIS_PER_SEC;
 
         // Acceleration terms
         let sin_1 = self.theta_1.sin();

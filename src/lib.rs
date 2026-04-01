@@ -1,6 +1,11 @@
+//! WebAssembly double pendulum simulation.
+//!
+//! This crate implements a real-time double pendulum physics simulation rendered
+//! to an HTML5 canvas via WebAssembly. It is compiled as a `wasm-bindgen` library
+//! and driven by the browser's `requestAnimationFrame` loop.
+
 #[macro_use]
 mod macros;
-mod anim;
 mod consts;
 mod double_pendulum;
 mod draw;
@@ -40,6 +45,11 @@ pub fn main() -> Result<(), JsValue> {
     // let state = Pendulum::new(2.0, PI / 4.0, 0.0);
     let state = DoublePendulum::new(1.0, 1.0, PI / 4.0, 0.0, 0.0, 0.0);
 
-    // Run simulation
-    SimulationRunner::new(state, window).run()
+    // Run simulation. Leak memory so it stays in window
+    let mut sim = Box::new(SimulationRunner::new(state, window));
+    sim.run()?;
+    Box::leak::<'static>(sim);
+
+    // Exit
+    Ok(())
 }

@@ -1,7 +1,15 @@
+//! Animation loop management for running simulations in the browser.
+//!
+//! [`SimulationRunner`] wires a [`Simulation`] to the browser's
+//! `requestAnimationFrame` loop via [`wasm_raf_handler::RAFLoop`], calling
+//! `render` then `update` on each frame.
+
+use std::{cell::RefCell, rc::Rc};
+
 use wasm_bindgen::JsValue;
+use wasm_raf_handler::{FrameCtx, RAFLoop};
 
 use crate::{
-    anim::{AnimationLoopRunner, FrameCtx},
     sim::{RenderCtx, Simulation, UpdateCtx},
     window::WindowCtx,
 };
@@ -14,8 +22,12 @@ use crate::{
 /// # Type Parameters
 /// * `S` - The simulation type that implements the `Simulation` trait.
 pub struct SimulationRunner<S: Simulation + 'static> {
-    window: WindowCtx,
-    sim: S,
+    /// The active `requestAnimationFrame` loop handle. `None` until [`run`](Self::run) is called.
+    rafloop: Option<RAFLoop>,
+    /// Shared reference to the window and canvas context used for rendering.
+    window: Rc<WindowCtx>,
+    /// Shared, interior-mutable reference to the simulation state.
+    sim: Rc<RefCell<S>>,
 }
 
 impl<S: Simulation + 'static> SimulationRunner<S> {
@@ -25,7 +37,11 @@ impl<S: Simulation + 'static> SimulationRunner<S> {
     /// * `state` - The initial simulation state.
     /// * `window` - The window and canvas context for rendering.
     pub fn new(state: S, window: WindowCtx) -> Self {
-        Self { window, sim: state }
+        Self {
+            rafloop: None,
+            window: Rc::new(window),
+            sim: Rc::new(RefCell::new(state)),
+        }
     }
 
     /// Starts the simulation loop.
@@ -35,19 +51,22 @@ impl<S: Simulation + 'static> SimulationRunner<S> {
     ///
     /// # Errors
     /// Returns a `JsValue` error if the animation frame request fails.
-    pub fn run(mut self) -> Result<(), JsValue> {
-        AnimationLoopRunner::new(move |frame: &FrameCtx| {
+    pub fn run(&mut self) -> Result<(), JsValue> {
+        let inner_window = Rc::clone(&self.window);
+        let inner_sim = Rc::clone(&self.sim);
+        let rafloop = RAFLoop::new(move |frame: FrameCtx| {
             // Render sim
             let render = RenderCtx {
-                window: &self.window,
-                frame,
+                window: &inner_window,
+                frame: &frame,
             };
-            self.sim.render(&render);
+            inner_sim.borrow().render(&render);
 
             // Update sim
-            let update = UpdateCtx { frame };
-            self.sim.update(&update);
-        })
-        .run()
+            let update = UpdateCtx { frame: &frame };
+            inner_sim.borrow_mut().update(&update);
+        })?;
+        self.rafloop = Some(rafloop);
+        Ok(())
     }
 }
